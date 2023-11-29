@@ -1,0 +1,288 @@
+[
+    {
+        "id": "894581be3c5976fd",
+        "type": "tab",
+        "label": "Exercise 8-2",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "42c7c34222ea2f61",
+        "type": "chatbot-telegram-receive",
+        "z": "894581be3c5976fd",
+        "bot": "e145681d1fc7e143",
+        "botProduction": "85f8f0405814343a",
+        "x": 190,
+        "y": 160,
+        "wires": [
+            [
+                "bf31dc6bb7e185d2",
+                "de8e3f16f9d80443"
+            ]
+        ]
+    },
+    {
+        "id": "890738ca2737fd7d",
+        "type": "chatbot-telegram-send",
+        "z": "894581be3c5976fd",
+        "bot": "e145681d1fc7e143",
+        "botProduction": "0499b0d64b936d21",
+        "track": false,
+        "passThrough": false,
+        "errorOutput": false,
+        "outputs": 0,
+        "x": 990,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "bf31dc6bb7e185d2",
+        "type": "debug",
+        "z": "894581be3c5976fd",
+        "name": "Show Incoming Msg!",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 540,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "de8e3f16f9d80443",
+        "type": "function",
+        "z": "894581be3c5976fd",
+        "name": "Compute Answer",
+        "func": "let location;\nlet type;\nlet time;\n\nif (msg.payload.content.includes(\"forecast\")) {\n    type = \"forecast\";\n}\nelse if (msg.payload.content.includes(\"wind speed\")){\n    type = \"wind\";\n}\n\nif (msg.payload.content.includes(\"tomorrow\")) {\n    time = 1;\n}\nelse if (msg.payload.content.includes(\"two days\"))\n{\n    time = 2;\n}\n\n\n\nif (msg.payload.content.includes(\"Milan\")) {\n    location = {\n        country: \"IT\",\n        city: \"Milan\"\n    }\n}\nelse if (msg.payload.content.includes(\"Rome\"))\n{\n    location = {\n        country: \"IT\",\n        city: \"Rome\"\n    }\n}\n\nif(time && type && location)\n{\n    msg.time = time;\n    msg.location = location;\n    msg.type = type;\n\n    return [null, msg];\n} else {\n    msg.payload.content = \"I don't get what you're asking...\";\n    delete msg.ts;\n    delete msg.transport;\n    msg.payload.inbound = false;\n    msg.payload.fallback = null;\n    return [msg, null];\n}\n",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 170,
+        "y": 340,
+        "wires": [
+            [
+                "890738ca2737fd7d"
+            ],
+            [
+                "92fe5eac7dfed643"
+            ]
+        ]
+    },
+    {
+        "id": "92fe5eac7dfed643",
+        "type": "openweathermap",
+        "z": "894581be3c5976fd",
+        "name": "Weather",
+        "wtype": "forecast",
+        "lon": "",
+        "lat": "",
+        "city": "",
+        "country": "",
+        "language": "en",
+        "x": 400,
+        "y": 360,
+        "wires": [
+            [
+                "30c00590f4157922",
+                "b36afbd4a74812d5"
+            ]
+        ]
+    },
+    {
+        "id": "30c00590f4157922",
+        "type": "debug",
+        "z": "894581be3c5976fd",
+        "name": "Show Weather!",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 600,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "b36afbd4a74812d5",
+        "type": "function",
+        "z": "894581be3c5976fd",
+        "name": "function 11",
+        "func": "let msg_part1;  //forecast or windspeed\nlet msg_part2 = msg.type;\nlet msg_part3 = msg.location.city + \" \";  //location\nlet msg_part4 = \"\";  //time extra\nlet msg_part5 = \"is \";\nlet msg_part6;\n\n\n\nif (msg.time == 1) {\n    msg_part1 = \"Tomorrow’s \";\n} else if (msg.time == 2) {\n    msg_part1 = \"Expected \";\n    msg_part4 = \"in two days \";\n}\n\nif (msg.type == \"forecast\")\n{\n    msg_part6 = msg.payload[8].weather[0].description.toString();\n    let num = flow.get(\"forecast\");\n    flow.set(\"forecast\", num +1);\n    msg_part2 += \" for \";\n}\nelse if (msg.type == \"wind\")\n{\n    msg_part6 = msg.payload[8].wind.speed.toString();\n    let num = flow.get(\"wind\");\n    flow.set(\"wind\", num + 1);\n    msg_part2 += \" speed for \";\n}\n\nlet answer = msg_part1 + msg_part2 + msg_part3 + msg_part4 + msg_part5 + msg_part6;\nmsg.answer = answer;\n\nif (answer == flow.get(msg.type + \",\" + msg.time + msg.location.city))\n{\n    context.set(msg.type + \",\" + msg.time + msg.location.city, answer)\n    msg.answer += \"! It is the same as the last time I was asked!\";\n}\nelse\n{\n    context.set(msg.type + \",\" + msg.time + msg.location.city, answer);\n    msg.answer += \"! It changed since the last time I was asked!\";\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\ncontext.set(\"forcast,1,Milan\", \"\");\ncontext.set(\"forcast,1,Rome\", \"\");\ncontext.set(\"forcast,2,Milan\", \"\");\ncontext.set(\"forcast,2,Rome\", \"\");\ncontext.set(\"wind,1,Milan\", \"\");\ncontext.set(\"wind,1,Rome\", \"\");\ncontext.set(\"wind,2,Milan\", \"\");\ncontext.set(\"wind,2,Rome\", \"\");\n\n\n",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 360,
+        "wires": [
+            [
+                "5f4ee9cd098d50fd"
+            ]
+        ]
+    },
+    {
+        "id": "5f4ee9cd098d50fd",
+        "type": "chatbot-message",
+        "z": "894581be3c5976fd",
+        "name": "Give text back",
+        "message": [
+            {
+                "message": "{{msg.answer}}"
+            }
+        ],
+        "language": "none",
+        "x": 780,
+        "y": 360,
+        "wires": [
+            [
+                "890738ca2737fd7d"
+            ]
+        ]
+    },
+    {
+        "id": "a8353e5c03e819ed",
+        "type": "inject",
+        "z": "894581be3c5976fd",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 130,
+        "y": 520,
+        "wires": [
+            [
+                "e01e0136b1606d06"
+            ]
+        ]
+    },
+    {
+        "id": "e01e0136b1606d06",
+        "type": "function",
+        "z": "894581be3c5976fd",
+        "name": "function 12",
+        "func": "var forecast = flow.get(\"forecast\");\nvar wind = flow.get(\"wind\");\nlet string = \"number forecast: \"+ forecast +\", number wind: \"+ wind;\nmsg.payload = wind;\nflow.set(\"forecast\", 0);\nflow.set(\"wind\", 0);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "// Code added here will be run once\n// whenever the node is started.\nflow.set(\"forecast\",0);\nflow.set(\"wind\", 0);",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 520,
+        "wires": [
+            [
+                "6d454f80197d9e9d"
+            ]
+        ]
+    },
+    {
+        "id": "6d454f80197d9e9d",
+        "type": "json",
+        "z": "894581be3c5976fd",
+        "name": "",
+        "property": "payload",
+        "action": "str",
+        "pretty": false,
+        "x": 590,
+        "y": 520,
+        "wires": [
+            [
+                "0182d772ee836a94"
+            ]
+        ]
+    },
+    {
+        "id": "0182d772ee836a94",
+        "type": "file",
+        "z": "894581be3c5976fd",
+        "name": "",
+        "filename": "C:\\Users\\lukas\\Desktop\\log.txt",
+        "filenameType": "str",
+        "appendNewline": true,
+        "createDir": false,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 850,
+        "y": 520,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e145681d1fc7e143",
+        "type": "chatbot-telegram-node",
+        "botname": "node_red_my_bot",
+        "usernames": "",
+        "polling": "1000",
+        "store": "",
+        "log": "",
+        "debug": false,
+        "skipMediaFiles": false,
+        "webHook": "",
+        "connectMode": "polling",
+        "storeMessages": true,
+        "enableMissionControl": false,
+        "inspectMessages": true,
+        "chatbotId": ""
+    },
+    {
+        "id": "85f8f0405814343a",
+        "type": "chatbot-telegram-node",
+        "botname": "node_red_my_bot",
+        "usernames": "",
+        "polling": "1000",
+        "store": "",
+        "log": "",
+        "debug": false,
+        "skipMediaFiles": false,
+        "webHook": "",
+        "connectMode": "polling",
+        "storeMessages": true,
+        "enableMissionControl": false,
+        "inspectMessages": true,
+        "chatbotId": ""
+    },
+    {
+        "id": "0499b0d64b936d21",
+        "type": "chatbot-telegram-node",
+        "botname": "node_red_my_bot",
+        "usernames": "",
+        "polling": "1000",
+        "store": "",
+        "log": "",
+        "debug": false,
+        "skipMediaFiles": false,
+        "webHook": "",
+        "connectMode": "polling",
+        "storeMessages": true,
+        "enableMissionControl": false,
+        "inspectMessages": true,
+        "chatbotId": ""
+    }
+]
